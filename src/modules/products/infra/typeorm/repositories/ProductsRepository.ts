@@ -21,21 +21,53 @@ class ProductsRepository implements IProductsRepository {
     price,
     quantity,
   }: ICreateProductDTO): Promise<Product> {
-    // TODO
+    const product = this.ormRepository.create({
+      name,
+      price,
+      quantity,
+    });
+
+    await this.ormRepository.save(product);
+
+    return product;
   }
 
   public async findByName(name: string): Promise<Product | undefined> {
-    // TODO
+    const findProduct = await this.ormRepository.findOne({
+      where: {
+        name,
+      },
+    });
+
+    return findProduct;
   }
 
   public async findAllById(products: IFindProducts[]): Promise<Product[]> {
-    // TODO
+    const productsIds = products.map(product => product.id);
+
+    const findProducts = await this.ormRepository.find({
+      where: {
+        id: In(productsIds),
+      },
+    });
+
+    return findProducts;
   }
 
   public async updateQuantity(
     products: IUpdateProductsQuantityDTO[],
   ): Promise<Product[]> {
-    // TODO
+    products.map(async product => {
+      const quantityBalance = await this.ormRepository.findOne(product.id);
+      if (quantityBalance && quantityBalance.quantity >= product.quantity) {
+        quantityBalance.quantity -= product.quantity;
+        await this.ormRepository.save(quantityBalance);
+      }
+    });
+
+    const productsUpdated = await this.findAllById(products);
+
+    return productsUpdated;
   }
 }
 
